@@ -56,8 +56,10 @@
         .thought-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: white; padding: 6px 15px; border-radius: 20px; cursor: pointer; transition: all 0.3s; }
         .thought-btn:hover { background: rgba(255,255,255,0.4); }
 
-        .controls { display: flex; justify-content: space-between; align-items: center; background: #f1f2f6; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
-        .water-toggle { display: flex; align-items: center; gap: 10px; font-weight: bold; color: #0077b6; }
+        .controls { display: flex; justify-content: space-between; align-items: center; background: #f1f2f6; padding: 15px; border-radius: 12px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        .toggles-group { display: flex; gap: 20px; flex-wrap: wrap; }
+        .toggle-item { display: flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer; }
+        .toggle-item label { cursor: pointer; }
         
         .input-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 30px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .input-group input, .input-group select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; outline: none; transition: border 0.3s; font-size: 14px; }
@@ -106,14 +108,64 @@
 
         @keyframes slideIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         
+        /* Water Alert */
         .water-alert { position: fixed; top: 20px; right: -350px; background: #0077b6; color: white; padding: 15px 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: right 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); z-index: 1000; font-weight: bold; }
         .water-alert.show { right: 20px; }
+
+        /* FIRE BLAST ANIMATION CSS */
+        .fire-blast-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: radial-gradient(circle, rgba(255, 69, 0, 0.8) 0%, rgba(255, 0, 0, 0) 70%);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none; /* Lets you click through it */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-out, visibility 0.3s;
+        }
+
+        .fire-blast-overlay.active {
+            visibility: visible;
+            animation: blastFade 3s ease-out forwards;
+        }
+
+        @keyframes blastFade {
+            0% { opacity: 0; transform: scale(0.5); }
+            15% { opacity: 1; transform: scale(1.1); }
+            80% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 0; transform: scale(1.5); }
+        }
+
+        .fire-emoji {
+            font-size: 150px;
+            animation: shake 0.4s infinite;
+            filter: drop-shadow(0 0 30px #ff4500);
+        }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            20% { transform: translate(-3px, 0px) rotate(3deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            80% { transform: translate(-1px, -1px) rotate(3deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
     </style>
 </head>
 <body>
 
+    <!-- Water Alert -->
     <div class="water-alert" id="waterAlert">
         💧 30 Minutes passed! Time for a water break!
+    </div>
+
+    <!-- Fire Blast Overlay -->
+    <div class="fire-blast-overlay" id="fireBlastOverlay">
+        <div class="fire-emoji">🔥</div>
     </div>
 
     <div class="container" id="top-container">
@@ -123,13 +175,22 @@
             <button class="thought-btn" onclick="fetchQuote()">✨ Get Another Thought</button>
         </div>
 
+        <!-- Updated Controls with Fire Toggle -->
         <div class="controls">
-            <div class="water-toggle">
-                <input type="checkbox" id="waterCheck" onchange="toggleWaterReminder()">
-                <label for="waterCheck">🌊 Enable 30-Min Water Reminder</label>
+            <div class="toggles-group">
+                <div class="toggle-item" style="color: #0077b6;">
+                    <input type="checkbox" id="waterCheck" onchange="toggleWaterReminder()">
+                    <label for="waterCheck">🌊 30-Min Water</label>
+                </div>
+                <div class="toggle-item" style="color: var(--danger);">
+                    <input type="checkbox" id="fireCheck" onchange="toggleFireBlast()">
+                    <label for="fireCheck">🔥 15-Min Fire Blast</label>
+                </div>
             </div>
-            <!-- Added a clear all button for convenience -->
-            <button class="icon-btn" onclick="clearAllData()" style="color: var(--danger); font-weight: bold;">🗑️ Clear All Data</button>
+            <div>
+                <button class="icon-btn" onclick="testFireBlast()" style="font-size: 14px; margin-right: 10px; background: #eee;">Test Fire Blast 🧪</button>
+                <button class="icon-btn" onclick="clearAllData()" style="color: var(--danger); font-weight: bold; background: #ffeaa7;">🗑️ Clear All Data</button>
+            </div>
         </div>
 
         <div class="input-group">
@@ -176,17 +237,13 @@
         let tasks = [];
         let editingTaskId = null;
 
-        // Initialize App on Load
         window.onload = () => {
             fetchQuote();
             loadTasks();
         };
 
-        // --- Data Storage Functions ---
-        function saveTasks() {
-            localStorage.setItem('studyTrackerData', JSON.stringify(tasks));
-        }
-
+        // Data Storage Functions
+        function saveTasks() { localStorage.setItem('studyTrackerData', JSON.stringify(tasks)); }
         function loadTasks() {
             const savedData = localStorage.getItem('studyTrackerData');
             if (savedData) {
@@ -194,7 +251,6 @@
                 renderAllTasks();
             }
         }
-
         function clearAllData() {
             if(confirm("Are you sure you want to delete ALL tasks permanently?")) {
                 tasks = [];
@@ -203,16 +259,14 @@
             }
         }
 
-        // --- Rendering Logic ---
+        // Rendering Logic
         function renderAllTasks() {
-            // Clear all lists first
             document.getElementById('timetableList').innerHTML = '';
             document.getElementById('mustList').innerHTML = '';
             document.getElementById('generalList').innerHTML = '';
             document.getElementById('watchList').innerHTML = '';
             document.getElementById('notList').innerHTML = '';
 
-            // Render each task into its appropriate column
             tasks.forEach(task => {
                 const targetList = document.getElementById(task.category + 'List');
                 if(!targetList) return;
@@ -245,7 +299,7 @@
             });
         }
 
-        // --- Task Actions ---
+        // Task Actions
         function addOrUpdateTask() {
             const category = document.getElementById('taskCategory').value;
             const startTime = document.getElementById('startTime').value;
@@ -259,7 +313,6 @@
             }
 
             if (editingTaskId) {
-                // Update existing task
                 const taskIndex = tasks.findIndex(t => t.id === editingTaskId);
                 if(taskIndex > -1) {
                     tasks[taskIndex].category = category;
@@ -268,69 +321,46 @@
                     tasks[taskIndex].taskName = taskName;
                     tasks[taskIndex].questionCount = questionCount;
                 }
-                
-                // Reset button
                 const btn = document.getElementById('addUpdateBtn');
                 btn.innerText = 'Add to Board';
                 btn.classList.remove('edit-mode');
                 editingTaskId = null;
             } else {
-                // Create new task
                 const newTask = {
-                    id: Date.now().toString(), // Generates a unique ID
-                    category,
-                    startTime,
-                    endTime,
-                    taskName,
-                    questionCount,
-                    completed: false
+                    id: Date.now().toString(),
+                    category, startTime, endTime, taskName, questionCount, completed: false
                 };
                 tasks.push(newTask);
             }
-
-            // Save, Render, and Clear Inputs
             saveTasks();
             renderAllTasks();
-            
             document.getElementById('taskName').value = '';
             document.getElementById('questionCount').value = '';
         }
 
         function toggleTask(id, isChecked) {
             const task = tasks.find(t => t.id === id);
-            if(task) {
-                task.completed = isChecked;
-                saveTasks();
-                renderAllTasks();
-            }
+            if(task) { task.completed = isChecked; saveTasks(); renderAllTasks(); }
         }
 
         function editTask(id) {
             const task = tasks.find(t => t.id === id);
             if(!task) return;
-
-            // Populate inputs
             document.getElementById('taskCategory').value = task.category;
             document.getElementById('startTime').value = task.startTime;
             document.getElementById('endTime').value = task.endTime;
             document.getElementById('taskName').value = task.taskName;
             document.getElementById('questionCount').value = task.questionCount;
-
             editingTaskId = id;
-
-            // Update UI
             const btn = document.getElementById('addUpdateBtn');
             btn.innerText = 'Update Task';
             btn.classList.add('edit-mode');
-
-            // Scroll to top
             document.getElementById('top-container').scrollIntoView({ behavior: 'smooth' });
         }
 
         function removeTask(id) {
             if (confirm("Are you sure you want to delete this task?")) {
                 tasks = tasks.filter(t => t.id !== id);
-                
                 if (editingTaskId === id) {
                     editingTaskId = null;
                     const btn = document.getElementById('addUpdateBtn');
@@ -339,13 +369,11 @@
                     document.getElementById('taskName').value = '';
                     document.getElementById('questionCount').value = '';
                 }
-                
                 saveTasks();
                 renderAllTasks();
             }
         }
 
-        // --- Quotes & Water Logic (Unchanged) ---
         async function fetchQuote() {
             const quoteEl = document.getElementById('quoteText');
             quoteEl.innerText = "Fetching thought...";
@@ -358,18 +386,65 @@
             }
         }
 
+        // --- Timer Logistics ---
+        let waterTimer;
         function toggleWaterReminder() {
             const isChecked = document.getElementById('waterCheck').checked;
             if (isChecked) {
+                // 30 minutes
                 waterTimer = setInterval(() => {
                     const alertBox = document.getElementById('waterAlert');
                     alertBox.classList.add('show');
                     setTimeout(() => { alertBox.classList.remove('show'); }, 6000);
                 }, 1800000); 
-                alert("Water reminder enabled! See you in 30 minutes.");
+                alert("Water reminder enabled!");
             } else {
                 clearInterval(waterTimer);
             }
+        }
+
+        // --- FIRE BLAST LOGIC ---
+        let fireTimer;
+        function toggleFireBlast() {
+            const isChecked = document.getElementById('fireCheck').checked;
+            if (isChecked) {
+                // 15 minutes = 900,000 milliseconds
+                fireTimer = setInterval(triggerFireBlast, 900000); 
+                alert("Fire Blast enabled! See you in 15 minutes.");
+            } else {
+                clearInterval(fireTimer);
+            }
+        }
+
+        function triggerFireBlast() {
+            // 1. Play Voice Announcement
+            if ('speechSynthesis' in window) {
+                const speech = new SpeechSynthesisUtterance("15 minutes of solid focus completed. You are on fire! Keep it up.");
+                speech.rate = 1.0;  // Speed of voice
+                speech.pitch = 1.1; // Pitch of voice
+                window.speechSynthesis.speak(speech);
+            }
+
+            // 2. Show the Fire Animation
+            const blastOverlay = document.getElementById('fireBlastOverlay');
+            
+            // Remove active class briefly so animation can restart if triggered multiple times
+            blastOverlay.classList.remove('active');
+            
+            // Force browser reflow
+            void blastOverlay.offsetWidth; 
+            
+            blastOverlay.classList.add('active');
+
+            // 3. Cleanup class after animation ends (3 seconds)
+            setTimeout(() => {
+                blastOverlay.classList.remove('active');
+            }, 3000);
+        }
+
+        // Manual Test Button Function
+        function testFireBlast() {
+            triggerFireBlast();
         }
     </script>
 </body>
