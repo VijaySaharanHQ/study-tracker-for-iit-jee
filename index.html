@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated Study Tracker</title>
+    <style>
+        :root {
+            --primary: #6C63FF;
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --glass-bg: rgba(255, 255, 255, 0.85);
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 20px;
+        }
+
+        .container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .water-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            color: #0077b6;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .input-group input {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+            transition: border 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary);
+        }
+
+        .input-full {
+            grid-column: span 2;
+        }
+
+        button.add-btn {
+            grid-column: span 2;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        button.add-btn:hover {
+            background: #5750d1;
+            transform: translateY(-2px);
+        }
+
+        .task-list {
+            list-style: none;
+            margin-top: 20px;
+        }
+
+        .task-item {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            animation: slideIn 0.4s ease-out forwards;
+            transition: all 0.3s;
+        }
+
+        .task-item.completed {
+            opacity: 0.6;
+            background: #f8f9fa;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: #888;
+        }
+
+        .task-details {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .task-time {
+            font-size: 12px;
+            color: #666;
+            font-weight: bold;
+            background: #eee;
+            padding: 3px 8px;
+            border-radius: 10px;
+            display: inline-block;
+            width: fit-content;
+        }
+
+        .task-questions {
+            font-size: 13px;
+            color: #d97706;
+            font-weight: 600;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .water-alert {
+            position: fixed;
+            top: 20px;
+            right: -300px;
+            background: #0077b6;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: right 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 1000;
+        }
+
+        .water-alert.show {
+            right: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="water-alert" id="waterAlert">
+        💧 Time for a water break! Stay hydrated!
+    </div>
+
+    <div class="container">
+        <h1>📚 Study & Task Tracker</h1>
+        
+        <div class="controls">
+            <div class="water-toggle">
+                <input type="checkbox" id="waterCheck" onchange="toggleWaterReminder()">
+                <label for="waterCheck">Enable 30-Min Water Reminder</label>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <input type="time" id="startTime" required>
+            <input type="time" id="endTime" required>
+            <input type="text" id="taskName" class="input-full" placeholder="What are you studying/doing?" required>
+            <input type="number" id="questionCount" class="input-full" placeholder="Target number of questions (optional)">
+            <button class="add-btn" onclick="addTask()">Add Task</button>
+        </div>
+
+        <ul class="task-list" id="taskList">
+            <!-- Tasks will appear here -->
+        </ul>
+    </div>
+
+    <script>
+        let waterTimer;
+
+        function toggleWaterReminder() {
+            const isChecked = document.getElementById('waterCheck').checked;
+            
+            if (isChecked) {
+                // 30 minutes = 1,800,000 milliseconds
+                waterTimer = setInterval(showWaterAlert, 1800000); 
+                alert("Water reminder enabled! I'll remind you every 30 minutes.");
+            } else {
+                clearInterval(waterTimer);
+            }
+        }
+
+        function showWaterAlert() {
+            const alertBox = document.getElementById('waterAlert');
+            alertBox.classList.add('show');
+            
+            // Hide the alert after 5 seconds
+            setTimeout(() => {
+                alertBox.classList.remove('show');
+            }, 5000);
+        }
+
+        function addTask() {
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            const taskName = document.getElementById('taskName').value;
+            const questionCount = document.getElementById('questionCount').value;
+
+            if (!startTime || !endTime || !taskName) {
+                alert("Please fill in the time slots and task name!");
+                return;
+            }
+
+            const taskList = document.getElementById('taskList');
+            const li = document.createElement('li');
+            li.className = 'task-item';
+            
+            let questionsHTML = questionCount ? `<span class="task-questions">🎯 Target: ${questionCount} Questions</span>` : '';
+
+            li.innerHTML = `
+                <div class="task-details">
+                    <span class="task-time">⏰ ${startTime} - ${endTime}</span>
+                    <strong class="task-text">${taskName}</strong>
+                    ${questionsHTML}
+                </div>
+                <div class="checkbox-container">
+                    <input type="checkbox" onchange="toggleTask(this)">
+                </div>
+            `;
+
+            taskList.appendChild(li);
+
+            // Clear inputs after adding
+            document.getElementById('taskName').value = '';
+            document.getElementById('questionCount').value = '';
+        }
+
+        function toggleTask(checkbox) {
+            const listItem = checkbox.closest('.task-item');
+            if (checkbox.checked) {
+                listItem.classList.add('completed');
+            } else {
+                listItem.classList.remove('completed');
+            }
+        }
+    </script>
+</body>
+</html>
