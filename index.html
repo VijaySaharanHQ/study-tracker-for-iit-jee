@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Study & Task Tracker</title>
+    <title>Ultimate Study & Task Tracker</title>
     <style>
         :root {
             --primary: #6C63FF;
             --danger: #ff4757;
             --warning: #ffa502;
             --success: #2ed573;
+            --info: #00cec9; /* Watch Color */
+            --timetable: #e84393; /* Time Table Color */
             --bg-gradient: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
             --glass-bg: rgba(255, 255, 255, 0.85);
         }
@@ -36,7 +38,7 @@
             border-radius: 20px;
             padding: 30px;
             width: 100%;
-            max-width: 1200px;
+            max-width: 1600px; /* Expanded for 5 columns */
             box-shadow: 0 10px 40px rgba(31, 38, 135, 0.15);
         }
 
@@ -140,17 +142,12 @@
             transform: translateY(-2px);
         }
 
-        /* Kanban Board Layout */
+        /* 5-Column Board Layout */
         .boards-container {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            /* Auto-fit makes it stack beautifully on smaller screens */
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .boards-container {
-                grid-template-columns: 1fr;
-            }
         }
 
         .board {
@@ -171,7 +168,9 @@
         }
 
         .must-do-header { color: var(--danger); }
+        .timetable-header { color: var(--timetable); }
         .general-header { color: var(--primary); }
+        .watch-header { color: var(--info); }
         .not-to-do-header { color: #57606f; }
 
         .task-list {
@@ -196,7 +195,9 @@
         }
 
         .task-item.must { border-left-color: var(--danger); }
+        .task-item.timetable { border-left-color: var(--timetable); }
         .task-item.general { border-left-color: var(--primary); }
+        .task-item.watch { border-left-color: var(--info); }
         .task-item.not { border-left-color: #2f3542; background: #f1f2f6; }
 
         .task-item.completed {
@@ -286,20 +287,27 @@
         <!-- Task Input Form -->
         <div class="input-group">
             <select id="taskCategory">
+                <option value="timetable">📅 Time Table</option>
                 <option value="must">🔥 Must Do</option>
                 <option value="general" selected>📋 General Task</option>
+                <option value="watch">📺 Watch</option>
                 <option value="not">🚫 Not To Do (Distractions)</option>
             </select>
             <input type="time" id="startTime" required>
             <input type="time" id="endTime" required>
-            <input type="text" id="taskName" class="input-full" placeholder="What is the task (or distraction to avoid)?" required>
+            <input type="text" id="taskName" class="input-full" placeholder="Enter task, lecture, or distraction..." required>
             <input type="number" id="questionCount" class="input-full" placeholder="Target number of questions/pages (optional)">
             <button class="add-btn" onclick="addTask()">Add to Board</button>
         </div>
 
-        <!-- 3-Column Boards -->
+        <!-- 5-Column Boards -->
         <div class="boards-container">
             
+            <div class="board">
+                <div class="board-header timetable-header">📅 Time Table</div>
+                <ul class="task-list" id="timetableList"></ul>
+            </div>
+
             <div class="board">
                 <div class="board-header must-do-header">🔥 Must Do</div>
                 <ul class="task-list" id="mustList"></ul>
@@ -308,6 +316,11 @@
             <div class="board">
                 <div class="board-header general-header">📋 General Tasks</div>
                 <ul class="task-list" id="generalList"></ul>
+            </div>
+
+            <div class="board">
+                <div class="board-header watch-header">📺 Watch</div>
+                <ul class="task-list" id="watchList"></ul>
             </div>
 
             <div class="board">
@@ -324,7 +337,6 @@
             const quoteEl = document.getElementById('quoteText');
             quoteEl.innerText = "Fetching thought...";
             try {
-                // Fetching from a free public API containing thousands of quotes
                 const response = await fetch('https://dummyjson.com/quotes/random');
                 const data = await response.json();
                 quoteEl.innerText = `"${data.quote}" — ${data.author}`;
@@ -367,10 +379,12 @@
                 return;
             }
 
-            // Determine which list to add to based on the dropdown selection
+            // Route the task to the correct column
             let targetListId = 'generalList';
             if (category === 'must') targetListId = 'mustList';
             if (category === 'not') targetListId = 'notList';
+            if (category === 'watch') targetListId = 'watchList';
+            if (category === 'timetable') targetListId = 'timetableList';
             
             const taskList = document.getElementById(targetListId);
             const li = document.createElement('li');
