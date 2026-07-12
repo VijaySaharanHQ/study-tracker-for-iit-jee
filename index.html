@@ -66,7 +66,7 @@
             transition: background 0.3s;
         }
 
-        /* Top Header & Stats (Streak, Progress, Dark Mode) */
+        /* Top Header & Stats */
         .app-header {
             display: flex;
             justify-content: space-between;
@@ -82,7 +82,24 @@
 
         .streak-box { font-size: 18px; font-weight: bold; color: var(--warning); display: flex; align-items: center; gap: 5px; }
         
-        .progress-wrapper { flex-grow: 1; max-width: 400px; }
+        /* Live Clock Styles */
+        .clock-box {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--primary);
+            background: var(--input-bg);
+            padding: 8px 15px;
+            border-radius: 10px;
+            border: 1px solid var(--input-border);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+            letter-spacing: 2px;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .progress-wrapper { flex-grow: 1; max-width: 350px; }
         .progress-text { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: var(--text-main); }
         .progress-bar { width: 100%; height: 10px; background: rgba(0,0,0,0.1); border-radius: 10px; overflow: hidden; }
         .progress-fill { height: 100%; width: 0%; background: var(--success); transition: width 0.4s ease-out; }
@@ -116,7 +133,7 @@
         button#addUpdateBtn { grid-column: 1 / -1; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
         button#addUpdateBtn.edit-mode { background: var(--warning); color: #333; }
 
-        /* 5-Column Board Layout - Enhanced for Interactivity */
+        /* Boards */
         .boards-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
         .board { background: var(--board-bg); border-radius: 15px; padding: 15px; border: 1px solid var(--board-border); min-height: 350px; display: flex; flex-direction: column; transition: background 0.3s; }
         .board.drag-over { background: rgba(108, 99, 255, 0.1); border: 2px dashed var(--primary); }
@@ -158,7 +175,7 @@
 
         @keyframes slideIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Custom Notification Toast */
+        /* Notification Toast */
         .toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 9999; }
         .toast { background: var(--card-bg); color: var(--text-main); padding: 15px 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border-left: 5px solid var(--primary); display: flex; align-items: center; gap: 10px; font-weight: bold; animation: slideInRight 0.5s ease forwards; }
         @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
@@ -177,30 +194,34 @@
         @media (max-width: 768px) {
             .container { padding: 15px; border-radius: 10px; }
             .boards-container { grid-template-columns: 1fr; }
-            .app-header { flex-direction: column; align-items: flex-start; }
-            .progress-wrapper { width: 100%; max-width: 100%; }
+            .app-header { flex-direction: column; align-items: center; text-align: center; }
+            .progress-wrapper { width: 100%; max-width: 100%; margin-top: 10px; }
+            .clock-box { width: 100%; justify-content: center; margin: 10px 0; }
             .theme-toggle { position: absolute; top: 35px; right: 25px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Notification Container -->
     <div class="toast-container" id="toastContainer"></div>
-
-    <!-- Alerts & Overlays -->
     <div class="water-alert" id="waterAlert">💧 30 Minutes passed! Time for a water break!</div>
     <div class="fire-blast-overlay" id="fireBlastOverlay"><div class="fire-emoji">🔥</div></div>
 
     <div class="container" id="top-container">
         
-        <!-- Stats & Theme Header -->
+        <!-- Header with Live Clock -->
         <div class="app-header">
             <div class="streak-box">🔥 Streak: <span id="streakCount">0</span> Days</div>
+            
+            <div class="clock-box">
+                ⏱️ <span id="liveClock">00:00:00</span>
+            </div>
+
             <div class="progress-wrapper">
                 <div class="progress-text">Daily Progress: <span id="progressText">0%</span></div>
                 <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
             </div>
+            
             <button class="theme-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">🌙</button>
         </div>
 
@@ -245,7 +266,7 @@
             <button id="addUpdateBtn" onclick="addOrUpdateTask()">Add to Board</button>
         </div>
 
-        <!-- Drag & Drop Boards -->
+        <!-- Boards -->
         <div class="boards-container">
             <div class="board" id="board-timetable" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'timetable')">
                 <div class="board-header timetable-header">📅 Time Table</div>
@@ -281,8 +302,29 @@
             updateStreak();
             fetchQuote();
             loadTasks();
-            toggleTaskNotifications(); // Start notification loop if checked
+            toggleTaskNotifications();
+            
+            // Start the Live Clock
+            updateLiveClock();
+            setInterval(updateLiveClock, 1000);
         };
+
+        // --- Live Clock Logic ---
+        function updateLiveClock() {
+            const now = new Date();
+            let hours = now.getHours();
+            let minutes = now.getMinutes();
+            let seconds = now.getSeconds();
+            let ampm = hours >= 12 ? 'PM' : 'AM';
+            
+            hours = hours % 12;
+            hours = hours ? hours : 12; // 0 should become 12
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            seconds = seconds < 10 ? '0' + seconds : seconds;
+            
+            const timeString = `${hours}:${minutes}:${seconds} ${ampm}`;
+            document.getElementById('liveClock').innerText = timeString;
+        }
 
         // --- Dark Mode Logic ---
         function initTheme() {
@@ -318,12 +360,12 @@
                     const yesterday = new Date();
                     yesterday.setDate(yesterday.getDate() - 1);
                     if (lastVisit === yesterday.toDateString()) {
-                        streak++; // Used yesterday, increase streak
+                        streak++;
                     } else {
-                        streak = 1; // Missed a day, reset to 1
+                        streak = 1; 
                     }
                 } else {
-                    streak = 1; // First ever visit
+                    streak = 1; 
                 }
                 localStorage.setItem('lastVisit', today);
                 localStorage.setItem('studyStreak', streak);
@@ -335,9 +377,8 @@
         function toggleTaskNotifications() {
             const isChecked = document.getElementById('notifyCheck').checked;
             if (isChecked) {
-                // Check every minute if a task is starting
                 notificationTimer = setInterval(checkUpcomingTasks, 60000);
-                checkUpcomingTasks(); // Check immediately
+                checkUpcomingTasks(); 
             } else {
                 clearInterval(notificationTimer);
             }
@@ -348,18 +389,14 @@
             const currentTimeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
             
             tasks.forEach(task => {
-                // Notifier fires exactly at start time (if not completed and not already notified)
                 if (task.startTime === currentTimeStr && !task.completed && !task.notified) {
                     showToast(`⏰ Task Starting: ${task.taskName}`);
-                    
-                    // Voice Alert
                     if ('speechSynthesis' in window) {
                         const speech = new SpeechSynthesisUtterance(`It's time to start: ${task.taskName}`);
                         window.speechSynthesis.speak(speech);
                     }
-                    
                     task.notified = true;
-                    saveTasks(); // Save that we notified them so it doesn't loop
+                    saveTasks(); 
                 }
             });
         }
@@ -391,7 +428,6 @@
         }
 
         function updateProgress() {
-            // Ignore "Not To Do" tasks in the calculation
             const actionableTasks = tasks.filter(t => t.category !== 'not');
             if (actionableTasks.length === 0) {
                 document.getElementById('progressText').innerText = "0%";
@@ -413,14 +449,13 @@
             document.getElementById('watchList').innerHTML = '';
             document.getElementById('notList').innerHTML = '';
 
-            tasks.sort((a, b) => a.startTime.localeCompare(b.startTime)); // Sort chronologically
+            tasks.sort((a, b) => a.startTime.localeCompare(b.startTime)); 
 
             tasks.forEach(task => {
                 const targetList = document.getElementById(task.category + 'List');
                 if(!targetList) return;
 
                 const li = document.createElement('li');
-                // Make draggable
                 li.className = `task-item ${task.category} ${task.completed ? 'completed' : ''}`;
                 li.setAttribute('draggable', true);
                 li.ondragstart = (e) => dragStart(e, task.id);
@@ -455,7 +490,6 @@
         // --- Drag and Drop Logic ---
         function dragStart(event, taskId) {
             event.dataTransfer.setData('text/plain', taskId);
-            // Slight delay to prevent the dragged ghost from disappearing
             setTimeout(() => { event.target.style.opacity = '0.5'; }, 0);
         }
 
@@ -500,7 +534,6 @@
                     tasks[taskIndex].endTime = endTime;
                     tasks[taskIndex].taskName = taskName;
                     tasks[taskIndex].questionCount = questionCount;
-                    // Reset notification status if time changed
                     tasks[taskIndex].notified = false; 
                 }
                 document.getElementById('addUpdateBtn').innerText = 'Add to Board';
