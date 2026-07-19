@@ -299,9 +299,10 @@
 
         window.onload = () => {
             initTheme();
+            loadTasks();
+            checkDailyReset(); // Checks if tasks need to be unchecked for a new day
             updateStreak();
             fetchQuote();
-            loadTasks();
             toggleTaskNotifications();
             
             // Start the Live Clock
@@ -318,12 +319,39 @@
             let ampm = hours >= 12 ? 'PM' : 'AM';
             
             hours = hours % 12;
-            hours = hours ? hours : 12; // 0 should become 12
+            hours = hours ? hours : 12; 
             minutes = minutes < 10 ? '0' + minutes : minutes;
             seconds = seconds < 10 ? '0' + seconds : seconds;
             
             const timeString = `${hours}:${minutes}:${seconds} ${ampm}`;
             document.getElementById('liveClock').innerText = timeString;
+        }
+
+        // --- Daily Reset Logic (Keeps tasks, unchecks boxes) ---
+        function checkDailyReset() {
+            const today = new Date().toDateString();
+            let lastReset = localStorage.getItem('lastResetDate');
+
+            if (lastReset !== today) {
+                let didReset = false;
+                
+                tasks.forEach(task => {
+                    // If a task was checked or notified yesterday, reset it
+                    if (task.completed || task.notified) {
+                        task.completed = false;
+                        task.notified = false;
+                        didReset = true;
+                    }
+                });
+
+                if (didReset) {
+                    saveTasks();
+                    renderAllTasks();
+                    showToast("🌅 Good Morning! Your daily tasks have been reset for today.");
+                }
+                
+                localStorage.setItem('lastResetDate', today);
+            }
         }
 
         // --- Dark Mode Logic ---
@@ -373,7 +401,7 @@
             document.getElementById('streakCount').innerText = streak;
         }
 
-        // --- Task Notification Logic ---
+        // --- Task Notification & Midnight Check Logic ---
         function toggleTaskNotifications() {
             const isChecked = document.getElementById('notifyCheck').checked;
             if (isChecked) {
@@ -385,6 +413,9 @@
         }
 
         function checkUpcomingTasks() {
+            // Also check if we crossed midnight while the tab was left open
+            checkDailyReset();
+
             const now = new Date();
             const currentTimeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
             
