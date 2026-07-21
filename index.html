@@ -13,6 +13,7 @@
             --success: #2ed573;
             --info: #00cec9;
             --timetable: #e84393;
+            --focus: #9b59b6;
             
             --math: #0984e3;
             --physics: #00b894;
@@ -80,9 +81,10 @@
         .tracker-progress { width: 100%; height: 8px; background: rgba(0,0,0,0.1); border-radius: 10px; overflow: hidden; }
         .tracker-fill { height: 100%; width: 0%; transition: width 0.4s ease-out; }
 
+        /* Controls */
         .controls { display: flex; justify-content: space-between; align-items: center; background: var(--panel-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
         .toggles-group { display: flex; gap: 20px; flex-wrap: wrap; }
-        .toggle-item { display: flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer; }
+        .toggle-item { display: flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer; padding: 5px 10px; border-radius: 8px; background: var(--input-bg); border: 1px solid var(--input-border); }
         
         .input-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 30px; background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); transition: background 0.3s; }
         .input-group input, .input-group select { padding: 12px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--input-border); border-radius: 8px; outline: none; transition: all 0.3s; font-size: 14px; }
@@ -153,13 +155,23 @@
         .toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 9999; }
         .toast { background: var(--card-bg); color: var(--text-main); padding: 15px 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border-left: 5px solid var(--primary); display: flex; align-items: center; gap: 10px; font-weight: bold; animation: slideInRight 0.5s ease forwards; }
         @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
         .water-alert { position: fixed; top: 20px; right: -350px; background: #0077b6; color: white; padding: 15px 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: right 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); z-index: 1000; font-weight: bold; }
         .water-alert.show { right: 20px; }
+        
         .fire-blast-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: radial-gradient(circle, rgba(255, 69, 0, 0.8) 0%, rgba(255, 0, 0, 0) 70%); z-index: 9999; display: flex; justify-content: center; align-items: center; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.3s; }
         .fire-blast-overlay.active { visibility: visible; animation: blastFade 3s ease-out forwards; }
         @keyframes blastFade { 0% { opacity: 0; transform: scale(0.5); } 15% { opacity: 1; transform: scale(1.1); } 80% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0; transform: scale(1.5); } }
-        .fire-emoji { font-size: 150px; animation: shake 0.4s infinite; filter: drop-shadow(0 0 30px #ff4500); }
-        @keyframes shake { 0% { transform: translate(1px, 1px) } 50% { transform: translate(-2px, -2px) } 100% { transform: translate(1px, 1px) } }
+        
+        /* NEW: Focus Alert Overlay */
+        .focus-alert-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255, 0, 0, 0.95); z-index: 10000; display: flex; justify-content: center; align-items: center; flex-direction: column; color: white; text-align: center; opacity: 0; visibility: hidden; transition: opacity 0.2s; }
+        .focus-alert-overlay.active { visibility: visible; opacity: 1; animation: flashBg 1s infinite alternate; }
+        @keyframes flashBg { from { background: rgba(255, 0, 0, 0.9); } to { background: rgba(200, 0, 0, 0.95); } }
+        .focus-alert-overlay h2 { font-size: 60px; margin-bottom: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 5px; }
+        .focus-alert-overlay p { font-size: 24px; font-weight: bold; }
+        
+        .alert-emoji { font-size: 150px; animation: shake 0.4s infinite; filter: drop-shadow(0 0 30px #ff4500); }
+        @keyframes shake { 0% { transform: translate(1px, 1px) } 50% { transform: translate(-3px, -3px) } 100% { transform: translate(1px, 1px) } }
 
         @media (max-width: 768px) {
             .container { padding: 15px; border-radius: 10px; }
@@ -169,14 +181,23 @@
             .clock-box { width: 100%; justify-content: center; margin: 10px 0; }
             .tracker-dashboard { flex-direction: column; }
             .theme-toggle { position: absolute; top: 35px; right: 25px; }
+            .focus-alert-overlay h2 { font-size: 40px; }
         }
     </style>
 </head>
 <body>
 
+    <!-- Overlays -->
     <div class="toast-container" id="toastContainer"></div>
     <div class="water-alert" id="waterAlert">💧 30 Minutes passed! Time for a water break!</div>
-    <div class="fire-blast-overlay" id="fireBlastOverlay"><div class="fire-emoji">🔥</div></div>
+    <div class="fire-blast-overlay" id="fireBlastOverlay"><div class="alert-emoji">🔥</div></div>
+    
+    <!-- Focus Alert Overlay -->
+    <div class="focus-alert-overlay" id="focusAlertOverlay">
+        <div class="alert-emoji">🚨</div>
+        <h2>Focus Lost!</h2>
+        <p>You left your study tab! Return immediately!</p>
+    </div>
 
     <div class="container" id="top-container">
         
@@ -195,7 +216,6 @@
             <button class="thought-btn" onclick="fetchQuote()">✨ Get Another Thought</button>
         </div>
 
-        <!-- NEW: Lectures & Question Tracker Dashboard -->
         <div class="tracker-dashboard">
             <div class="tracker-card">
                 <div class="tracker-header">📚 Daily Lectures Attended</div>
@@ -204,9 +224,7 @@
                     <span style="color: var(--text-muted);">/</span>
                     <input type="number" id="lecTotal" value="5" min="1" onchange="saveTrackers()" title="Total Target Lectures">
                 </div>
-                <div class="tracker-progress">
-                    <div class="tracker-fill" id="lecFill" style="background: var(--info);"></div>
-                </div>
+                <div class="tracker-progress"><div class="tracker-fill" id="lecFill" style="background: var(--info);"></div></div>
             </div>
             
             <div class="tracker-card">
@@ -216,9 +234,7 @@
                     <span style="color: var(--text-muted);">/</span>
                     <input type="number" id="qTotal" value="50" min="1" onchange="saveTrackers()" title="Total Target Questions">
                 </div>
-                <div class="tracker-progress">
-                    <div class="tracker-fill" id="qFill" style="background: var(--warning);"></div>
-                </div>
+                <div class="tracker-progress"><div class="tracker-fill" id="qFill" style="background: var(--warning);"></div></div>
             </div>
         </div>
 
@@ -234,7 +250,12 @@
                 </div>
                 <div class="toggle-item" style="color: var(--success);">
                     <input type="checkbox" id="notifyCheck" onchange="toggleTaskNotifications()" checked>
-                    <label for="notifyCheck">🔔 Task Notifications</label>
+                    <label for="notifyCheck">🔔 Tasks</label>
+                </div>
+                <!-- NEW: Focus Mode Toggle -->
+                <div class="toggle-item" style="color: var(--focus);">
+                    <input type="checkbox" id="focusCheck" onchange="toggleFocusMode()">
+                    <label for="focusCheck">🎯 Strict Focus</label>
                 </div>
             </div>
             <div>
@@ -278,7 +299,6 @@
 
         <!-- 12 Drag & Drop Boards -->
         <div class="boards-container">
-            
             <!-- Academics -->
             <div class="board" id="board-math" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'math')"><div class="board-header math-header">📐 Mathematics Notes</div><ul class="task-list" id="mathList"></ul></div>
             <div class="board" id="board-physics" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'physics')"><div class="board-header physics-header">🍎 Physics Notes</div><ul class="task-list" id="physicsList"></ul></div>
@@ -298,7 +318,6 @@
             <!-- Media & Distractions -->
             <div class="board" id="board-watch" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'watch')"><div class="board-header watch-header">📺 Watch Points</div><ul class="task-list" id="watchList"></ul></div>
             <div class="board" id="board-not" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'not')"><div class="board-header not-to-do-header">🚫 Not To Do Points</div><ul class="task-list" id="notList"></ul></div>
-
         </div>
     </div>
 
@@ -307,10 +326,11 @@
         let editingTaskId = null;
         let isDarkMode = false;
         let notificationTimer;
+        let focusModeActive = false; // New Focus State
 
         window.onload = () => {
             initTheme();
-            loadTrackers(); // Load Tracker Numbers
+            loadTrackers();
             loadTasks();
             checkDailyReset(); 
             updateStreak();
@@ -322,32 +342,67 @@
             setInterval(updateLiveClock, 1000);
         };
 
+        // --- NEW: Strict Focus Mode Logic ---
+        function toggleFocusMode() {
+            focusModeActive = document.getElementById('focusCheck').checked;
+            
+            if (focusModeActive) {
+                // Request Full Screen
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        console.log("Error attempting to enable fullscreen:", err.message);
+                    });
+                }
+                showToast("🎯 Strict Focus Mode ON! Do not switch tabs or minimize the browser.");
+            } else {
+                // Exit Full Screen
+                if (document.exitFullscreen && document.fullscreenElement) {
+                    document.exitFullscreen();
+                }
+                showToast("Focus Mode OFF.");
+            }
+        }
+
+        // Listen for user leaving the tab
+        document.addEventListener('visibilitychange', () => {
+            if (focusModeActive) {
+                const alertOverlay = document.getElementById('focusAlertOverlay');
+                
+                if (document.hidden) {
+                    // User Left the Tab
+                    alertOverlay.classList.add('active');
+                    if ('speechSynthesis' in window) {
+                        const speech = new SpeechSynthesisUtterance("Warning! You left your study tab! Return immediately!");
+                        speech.rate = 1.1; 
+                        speech.pitch = 1.2;
+                        window.speechSynthesis.speak(speech);
+                    }
+                } else {
+                    // User Came Back
+                    alertOverlay.classList.remove('active');
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.cancel(); // Stop shouting
+                        const speech = new SpeechSynthesisUtterance("Good. Stay focused.");
+                        window.speechSynthesis.speak(speech);
+                    }
+                }
+            }
+        });
+
         // --- Goal Tracker Logic ---
         function loadTrackers() {
-            const lecDone = localStorage.getItem('lecDone') || '0';
-            const lecTotal = localStorage.getItem('lecTotal') || '5';
-            const qDone = localStorage.getItem('qDone') || '0';
-            const qTotal = localStorage.getItem('qTotal') || '50';
-
-            document.getElementById('lecDone').value = lecDone;
-            document.getElementById('lecTotal').value = lecTotal;
-            document.getElementById('qDone').value = qDone;
-            document.getElementById('qTotal').value = qTotal;
-
+            document.getElementById('lecDone').value = localStorage.getItem('lecDone') || '0';
+            document.getElementById('lecTotal').value = localStorage.getItem('lecTotal') || '5';
+            document.getElementById('qDone').value = localStorage.getItem('qDone') || '0';
+            document.getElementById('qTotal').value = localStorage.getItem('qTotal') || '50';
             updateTrackerVisuals();
         }
 
         function saveTrackers() {
-            const lecDone = document.getElementById('lecDone').value;
-            const lecTotal = document.getElementById('lecTotal').value;
-            const qDone = document.getElementById('qDone').value;
-            const qTotal = document.getElementById('qTotal').value;
-
-            localStorage.setItem('lecDone', lecDone);
-            localStorage.setItem('lecTotal', lecTotal);
-            localStorage.setItem('qDone', qDone);
-            localStorage.setItem('qTotal', qTotal);
-
+            localStorage.setItem('lecDone', document.getElementById('lecDone').value);
+            localStorage.setItem('lecTotal', document.getElementById('lecTotal').value);
+            localStorage.setItem('qDone', document.getElementById('qDone').value);
+            localStorage.setItem('qTotal', document.getElementById('qTotal').value);
             updateTrackerVisuals();
         }
 
@@ -357,13 +412,9 @@
             const qDone = parseInt(document.getElementById('qDone').value) || 0;
             const qTotal = parseInt(document.getElementById('qTotal').value) || 1;
 
-            const lecPerc = Math.min((lecDone / lecTotal) * 100, 100);
-            const qPerc = Math.min((qDone / qTotal) * 100, 100);
-
-            document.getElementById('lecFill').style.width = `${lecPerc}%`;
-            document.getElementById('qFill').style.width = `${qPerc}%`;
+            document.getElementById('lecFill').style.width = `${Math.min((lecDone / lecTotal) * 100, 100)}%`;
+            document.getElementById('qFill').style.width = `${Math.min((qDone / qTotal) * 100, 100)}%`;
         }
-
 
         // --- UI Category Logic ---
         function handleCategoryChange() {
@@ -373,12 +424,10 @@
             const taskNameInput = document.getElementById('taskName');
 
             if (cat === 'timetable' || cat === 'sunday') {
-                time1.classList.remove('hidden');
-                time2.classList.remove('hidden');
+                time1.classList.remove('hidden'); time2.classList.remove('hidden');
                 taskNameInput.placeholder = "Enter task, lecture, or activity...";
             } else {
-                time1.classList.add('hidden');
-                time2.classList.add('hidden');
+                time1.classList.add('hidden'); time2.classList.add('hidden');
                 taskNameInput.placeholder = "Write a point to see / note to remember...";
             }
         }
@@ -386,41 +435,27 @@
         // --- Live Clock Logic ---
         function updateLiveClock() {
             const now = new Date();
-            let hours = now.getHours();
-            let minutes = now.getMinutes();
-            let seconds = now.getSeconds();
+            let hours = now.getHours(), minutes = now.getMinutes(), seconds = now.getSeconds();
             let ampm = hours >= 12 ? 'PM' : 'AM';
-            
-            hours = hours % 12;
-            hours = hours ? hours : 12; 
+            hours = hours % 12; hours = hours ? hours : 12; 
             minutes = minutes < 10 ? '0' + minutes : minutes;
             seconds = seconds < 10 ? '0' + seconds : seconds;
-            
             document.getElementById('liveClock').innerText = `${hours}:${minutes}:${seconds} ${ampm}`;
         }
 
         // --- Daily Reset Logic ---
         function checkDailyReset() {
             const today = new Date().toDateString();
-            let lastReset = localStorage.getItem('lastResetDate');
-
-            if (lastReset !== today) {
+            if (localStorage.getItem('lastResetDate') !== today) {
                 let didReset = false;
                 tasks.forEach(task => {
-                    if (task.completed || task.notified) {
-                        task.completed = false;
-                        task.notified = false;
-                        didReset = true;
-                    }
+                    if (task.completed || task.notified) { task.completed = false; task.notified = false; didReset = true; }
                 });
-                
-                // Reset Trackers to 0 (but keep Totals)
                 document.getElementById('lecDone').value = 0;
                 document.getElementById('qDone').value = 0;
                 saveTrackers();
-                didReset = true;
-
-                if (didReset) {
+                
+                if (didReset || localStorage.getItem('lastResetDate')) {
                     saveTasks(); renderAllTasks();
                     showToast("🌅 Good Morning! Your tasks and trackers have been reset for today.");
                 }
@@ -430,8 +465,7 @@
 
         // --- Dark Mode Logic ---
         function initTheme() {
-            const savedTheme = localStorage.getItem('theme');
-            isDarkMode = savedTheme === 'dark';
+            isDarkMode = localStorage.getItem('theme') === 'dark';
             applyTheme();
         }
         function toggleDarkMode() {
@@ -441,11 +475,9 @@
         }
         function applyTheme() {
             if(isDarkMode) {
-                document.body.classList.add('dark-mode');
-                document.querySelector('.theme-toggle').innerText = '☀️';
+                document.body.classList.add('dark-mode'); document.querySelector('.theme-toggle').innerText = '☀️';
             } else {
-                document.body.classList.remove('dark-mode');
-                document.querySelector('.theme-toggle').innerText = '🌙';
+                document.body.classList.remove('dark-mode'); document.querySelector('.theme-toggle').innerText = '🌙';
             }
         }
 
@@ -457,10 +489,8 @@
 
             if (lastVisit !== today) {
                 if (lastVisit) {
-                    const yesterday = new Date();
-                    yesterday.setDate(yesterday.getDate() - 1);
-                    if (lastVisit === yesterday.toDateString()) streak++;
-                    else streak = 1; 
+                    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+                    streak = (lastVisit === yesterday.toDateString()) ? streak + 1 : 1;
                 } else streak = 1; 
                 localStorage.setItem('lastVisit', today);
                 localStorage.setItem('studyStreak', streak);
@@ -473,7 +503,7 @@
             if (document.getElementById('notifyCheck').checked) {
                 notificationTimer = setInterval(checkUpcomingTasks, 60000);
                 checkUpcomingTasks(); 
-            } else { clearInterval(notificationTimer); }
+            } else clearInterval(notificationTimer);
         }
 
         function checkUpcomingTasks() {
@@ -487,16 +517,14 @@
                     if ('speechSynthesis' in window) {
                         window.speechSynthesis.speak(new SpeechSynthesisUtterance(`It's time to start: ${task.taskName}`));
                     }
-                    task.notified = true;
-                    saveTasks(); 
+                    task.notified = true; saveTasks(); 
                 }
             });
         }
 
         function showToast(message) {
             const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = 'toast';
+            const toast = document.createElement('div'); toast.className = 'toast';
             toast.innerHTML = `<span>${message}</span>`;
             container.appendChild(toast);
             setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 5000);
@@ -512,12 +540,9 @@
         function clearAllData() {
             if(confirm("Are you sure you want to delete ALL tasks permanently?")) {
                 tasks = []; 
-                document.getElementById('lecDone').value = 0;
-                document.getElementById('lecTotal').value = 5;
-                document.getElementById('qDone').value = 0;
-                document.getElementById('qTotal').value = 50;
-                saveTrackers();
-                saveTasks(); renderAllTasks();
+                document.getElementById('lecDone').value = 0; document.getElementById('lecTotal').value = 5;
+                document.getElementById('qDone').value = 0; document.getElementById('qTotal').value = 50;
+                saveTrackers(); saveTasks(); renderAllTasks();
             }
         }
 
@@ -541,9 +566,7 @@
 
             tasks.sort((a, b) => {
                 if (a.startTime && b.startTime) return a.startTime.localeCompare(b.startTime);
-                if (a.startTime) return -1;
-                if (b.startTime) return 1;
-                return 0;
+                if (a.startTime) return -1; if (b.startTime) return 1; return 0;
             }); 
 
             tasks.forEach(task => {
@@ -567,10 +590,7 @@
                         </div>
                     </div>
                     <div class="task-actions-bar">
-                        <div class="checkbox-container">
-                            <input type="checkbox" onchange="toggleTask('${task.id}', this.checked)" ${task.completed ? 'checked' : ''}>
-                            <label>Done</label>
-                        </div>
+                        <div class="checkbox-container"><input type="checkbox" onchange="toggleTask('${task.id}', this.checked)" ${task.completed ? 'checked' : ''}><label>Done</label></div>
                         <div class="icon-btn-group">
                             <button onclick="editTask('${task.id}')" class="icon-btn" title="Edit">✏️</button>
                             <button onclick="removeTask('${task.id}')" class="icon-btn" title="Delete">🗑️</button>
@@ -579,30 +599,20 @@
                 `;
                 targetList.appendChild(li);
             });
-            
             updateProgress();
         }
 
         // --- Drag and Drop Logic ---
-        function dragStart(event, taskId) {
-            event.dataTransfer.setData('text/plain', taskId);
-            setTimeout(() => { event.target.style.opacity = '0.5'; }, 0);
-        }
+        function dragStart(event, taskId) { event.dataTransfer.setData('text/plain', taskId); setTimeout(() => { event.target.style.opacity = '0.5'; }, 0); }
         function allowDrop(event) { event.preventDefault(); event.currentTarget.classList.add('drag-over'); }
         function dragLeave(event) { event.currentTarget.classList.remove('drag-over'); }
         function drop(event, newCategory) {
             event.preventDefault();
             document.querySelectorAll('.board').forEach(b => b.classList.remove('drag-over'));
-            
-            const taskId = event.dataTransfer.getData('text/plain');
-            const taskIndex = tasks.findIndex(t => t.id === taskId);
-            
+            const taskIndex = tasks.findIndex(t => t.id === event.dataTransfer.getData('text/plain'));
             if(taskIndex > -1) {
                 tasks[taskIndex].category = newCategory;
-                if(newCategory !== 'timetable' && newCategory !== 'sunday') {
-                    tasks[taskIndex].startTime = "";
-                    tasks[taskIndex].endTime = "";
-                }
+                if(newCategory !== 'timetable' && newCategory !== 'sunday') { tasks[taskIndex].startTime = ""; tasks[taskIndex].endTime = ""; }
                 saveTasks(); renderAllTasks();
             }
         }
@@ -611,10 +621,8 @@
         function addOrUpdateTask() {
             const category = document.getElementById('taskCategory').value;
             const isTimed = (category === 'timetable' || category === 'sunday');
-            
             const startTime = isTimed ? document.getElementById('startTime').value : "";
             const endTime = isTimed ? document.getElementById('endTime').value : "";
-            
             const taskName = document.getElementById('taskName').value;
             const questionCount = document.getElementById('questionCount').value;
 
@@ -624,12 +632,9 @@
             if (editingTaskId) {
                 const taskIndex = tasks.findIndex(t => t.id === editingTaskId);
                 if(taskIndex > -1) {
-                    tasks[taskIndex].category = category;
-                    tasks[taskIndex].startTime = startTime;
-                    tasks[taskIndex].endTime = endTime;
-                    tasks[taskIndex].taskName = taskName;
-                    tasks[taskIndex].questionCount = questionCount;
-                    tasks[taskIndex].notified = false; 
+                    tasks[taskIndex].category = category; tasks[taskIndex].startTime = startTime;
+                    tasks[taskIndex].endTime = endTime; tasks[taskIndex].taskName = taskName;
+                    tasks[taskIndex].questionCount = questionCount; tasks[taskIndex].notified = false; 
                 }
                 document.getElementById('addUpdateBtn').innerText = 'Add to Board';
                 document.getElementById('addUpdateBtn').classList.remove('edit-mode');
@@ -638,12 +643,8 @@
                 tasks.push({ id: Date.now().toString(), category, startTime, endTime, taskName, questionCount, completed: false, notified: false });
             }
             saveTasks(); renderAllTasks();
-            document.getElementById('taskName').value = '';
-            document.getElementById('questionCount').value = '';
-            if(isTimed) {
-                document.getElementById('startTime').value = '';
-                document.getElementById('endTime').value = '';
-            }
+            document.getElementById('taskName').value = ''; document.getElementById('questionCount').value = '';
+            if(isTimed) { document.getElementById('startTime').value = ''; document.getElementById('endTime').value = ''; }
         }
 
         function toggleTask(id, isChecked) {
@@ -654,16 +655,11 @@
         function editTask(id) {
             const task = tasks.find(t => t.id === id);
             if(!task) return;
-            
-            document.getElementById('taskCategory').value = task.category;
-            handleCategoryChange(); 
-            
+            document.getElementById('taskCategory').value = task.category; handleCategoryChange(); 
             if(task.startTime) document.getElementById('startTime').value = task.startTime;
             if(task.endTime) document.getElementById('endTime').value = task.endTime;
-            
             document.getElementById('taskName').value = task.taskName;
             document.getElementById('questionCount').value = task.questionCount;
-            
             editingTaskId = id;
             document.getElementById('addUpdateBtn').innerText = 'Update Note/Task';
             document.getElementById('addUpdateBtn').classList.add('edit-mode');
@@ -713,13 +709,10 @@
 
         function triggerFireBlast() {
             if ('speechSynthesis' in window) {
-                const speech = new SpeechSynthesisUtterance("15 minutes of solid focus completed. You are on fire!");
-                speech.rate = 1.0; speech.pitch = 1.1;
-                window.speechSynthesis.speak(speech);
+                window.speechSynthesis.speak(new SpeechSynthesisUtterance("15 minutes of solid focus completed. You are on fire!"));
             }
             const blastOverlay = document.getElementById('fireBlastOverlay');
-            blastOverlay.classList.remove('active');
-            void blastOverlay.offsetWidth; 
+            blastOverlay.classList.remove('active'); void blastOverlay.offsetWidth; 
             blastOverlay.classList.add('active');
             setTimeout(() => blastOverlay.classList.remove('active'), 3000);
         }
