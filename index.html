@@ -163,7 +163,7 @@
         .fire-blast-overlay.active { visibility: visible; animation: blastFade 3s ease-out forwards; }
         @keyframes blastFade { 0% { opacity: 0; transform: scale(0.5); } 15% { opacity: 1; transform: scale(1.1); } 80% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0; transform: scale(1.5); } }
         
-        /* NEW: Focus Alert Overlay */
+        /* Focus Alert Overlay */
         .focus-alert-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255, 0, 0, 0.95); z-index: 10000; display: flex; justify-content: center; align-items: center; flex-direction: column; color: white; text-align: center; opacity: 0; visibility: hidden; transition: opacity 0.2s; }
         .focus-alert-overlay.active { visibility: visible; opacity: 1; animation: flashBg 1s infinite alternate; }
         @keyframes flashBg { from { background: rgba(255, 0, 0, 0.9); } to { background: rgba(200, 0, 0, 0.95); } }
@@ -250,18 +250,34 @@
                 </div>
                 <div class="toggle-item" style="color: var(--success);">
                     <input type="checkbox" id="notifyCheck" onchange="toggleTaskNotifications()" checked>
-                    <label for="notifyCheck">🔔 Tasks</label>
+                    <label for="notifyCheck">🔔 Task Notifications</label>
                 </div>
-                <!-- NEW: Focus Mode Toggle -->
-                <div class="toggle-item" style="color: var(--focus);">
-                    <input type="checkbox" id="focusCheck" onchange="toggleFocusMode()">
-                    <label for="focusCheck">🎯 Strict Focus</label>
+                
+                <!-- Smart Focus Dropdown -->
+                <div class="toggle-item" style="color: var(--focus); padding: 2px 5px;">
+                    <select id="focusModeSelect" onchange="changeFocusMode()" style="background: transparent; border: none; font-weight: bold; color: var(--focus); outline: none; cursor: pointer;">
+                        <option value="off">🟢 Focus Mode: OFF</option>
+                        <option value="lecture">🖥️ Lecture Mode (Allows Tab Switch)</option>
+                        <option value="strict">🔒 Strict Tab-Lock (Self-Study)</option>
+                    </select>
                 </div>
             </div>
             <div>
-                <button class="icon-btn" onclick="triggerFireBlast()">Test Fire 🧪</button>
+                <button class="icon-btn" onclick="togglePWFrame()" style="background: var(--primary); color: white; font-weight: bold; margin-right: 10px;">📚 Open PW.live</button>
                 <button class="icon-btn" onclick="clearAllData()" style="color: var(--danger); font-weight: bold;">🗑️ Clear Data</button>
             </div>
+        </div>
+
+        <!-- NEW: Embedded PW.live Viewer -->
+        <div id="pwContainer" class="hidden" style="margin-bottom: 25px; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border: 2px solid var(--primary);">
+            <div style="background: var(--panel-bg); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; font-weight: bold;">
+                <span style="color: var(--primary);">📚 Physics Wallah Live Studio</span>
+                <div>
+                    <button onclick="openPWPopup()" class="icon-btn" style="margin-right: 5px; font-weight:bold; background: white;" title="Click if the window stays white due to browser security">Pop-Out 🪟</button>
+                    <button onclick="togglePWFrame()" class="icon-btn" style="color: var(--danger); font-weight:bold; background: white;">Close ❌</button>
+                </div>
+            </div>
+            <iframe id="pwFrame" src="about:blank" width="100%" height="650px" style="border: none; background: white;" allowfullscreen="true"></iframe>
         </div>
 
         <!-- Dynamic Input Form -->
@@ -299,23 +315,19 @@
 
         <!-- 12 Drag & Drop Boards -->
         <div class="boards-container">
-            <!-- Academics -->
             <div class="board" id="board-math" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'math')"><div class="board-header math-header">📐 Mathematics Notes</div><ul class="task-list" id="mathList"></ul></div>
             <div class="board" id="board-physics" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'physics')"><div class="board-header physics-header">🍎 Physics Notes</div><ul class="task-list" id="physicsList"></ul></div>
             <div class="board" id="board-chemistry" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'chemistry')"><div class="board-header chemistry-header">🧪 Chemistry Notes</div><ul class="task-list" id="chemistryList"></ul></div>
             <div class="board" id="board-boards" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'boards')"><div class="board-header boards-header">📝 Boards Prep Notes</div><ul class="task-list" id="boardsList"></ul></div>
 
-            <!-- Standard -->
             <div class="board" id="board-timetable" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'timetable')"><div class="board-header timetable-header">📅 Time Table</div><ul class="task-list" id="timetableList"></ul></div>
             <div class="board" id="board-must" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'must')"><div class="board-header must-do-header">🔥 Must Do Points</div><ul class="task-list" id="mustList"></ul></div>
             <div class="board" id="board-general" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'general')"><div class="board-header general-header">📋 General Points</div><ul class="task-list" id="generalList"></ul></div>
             
-            <!-- Strategy -->
             <div class="board" id="board-weekly" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'weekly')"><div class="board-header weekly-header">📅 Weekly Strategy Points</div><ul class="task-list" id="weeklyList"></ul></div>
             <div class="board" id="board-sunday" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'sunday')"><div class="board-header sunday-header">☀️ Special Sunday</div><ul class="task-list" id="sundayList"></ul></div>
             <div class="board" id="board-sleep" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'sleep')"><div class="board-header sleep-header">🌙 Before Sleep Notes</div><ul class="task-list" id="sleepList"></ul></div>
 
-            <!-- Media & Distractions -->
             <div class="board" id="board-watch" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'watch')"><div class="board-header watch-header">📺 Watch Points</div><ul class="task-list" id="watchList"></ul></div>
             <div class="board" id="board-not" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'not')"><div class="board-header not-to-do-header">🚫 Not To Do Points</div><ul class="task-list" id="notList"></ul></div>
         </div>
@@ -326,7 +338,7 @@
         let editingTaskId = null;
         let isDarkMode = false;
         let notificationTimer;
-        let focusModeActive = false; // New Focus State
+        let currentFocusMode = "off";
 
         window.onload = () => {
             initTheme();
@@ -342,48 +354,67 @@
             setInterval(updateLiveClock, 1000);
         };
 
-        // --- NEW: Strict Focus Mode Logic ---
-        function toggleFocusMode() {
-            focusModeActive = document.getElementById('focusCheck').checked;
-            
-            if (focusModeActive) {
-                // Request Full Screen
-                if (document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen().catch(err => {
-                        console.log("Error attempting to enable fullscreen:", err.message);
-                    });
+        // --- NEW: Physics Wallah Studio Integration ---
+        function togglePWFrame() {
+            const pwDiv = document.getElementById('pwContainer');
+            const frame = document.getElementById('pwFrame');
+            if (pwDiv.classList.contains('hidden')) {
+                pwDiv.classList.remove('hidden');
+                if (frame.src.includes("about:blank")) {
+                    frame.src = "https://pw.live";
                 }
-                showToast("🎯 Strict Focus Mode ON! Do not switch tabs or minimize the browser.");
+                pwDiv.scrollIntoView({ behavior: 'smooth' });
+                showToast("📚 PW Studio Opened! (If it stays blank, click 'Pop-Out' to bypass security).");
             } else {
-                // Exit Full Screen
-                if (document.exitFullscreen && document.fullscreenElement) {
-                    document.exitFullscreen();
-                }
-                showToast("Focus Mode OFF.");
+                pwDiv.classList.add('hidden');
+                frame.src = "about:blank"; // Stops audio from playing in the background
             }
         }
 
-        // Listen for user leaving the tab
+        function openPWPopup() {
+            // Automatically switch to Lecture Mode so the alarm doesn't ring
+            document.getElementById('focusModeSelect').value = "lecture";
+            changeFocusMode();
+            window.open("https://pw.live", "pwWindow", "width=1200,height=800,menubar=no,toolbar=no");
+            showToast("Pop-Out launched! Auto-switched to 'Lecture Mode' to stop alarms.");
+        }
+
+        // --- Smart Focus Mode Logic ---
+        function changeFocusMode() {
+            currentFocusMode = document.getElementById('focusModeSelect').value;
+            
+            if (currentFocusMode === "lecture" || currentFocusMode === "strict") {
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen().catch(err => console.log(err));
+                }
+                if (currentFocusMode === "lecture") {
+                    showToast("🖥️ Lecture Mode ON! You can safely switch tabs to PW.");
+                } else {
+                    showToast("🔒 Strict Tab-Lock ON! Do NOT switch tabs!");
+                }
+            } else {
+                if (document.exitFullscreen && document.fullscreenElement) {
+                    document.exitFullscreen();
+                }
+                showToast("🟢 Focus Mode OFF.");
+            }
+        }
+
         document.addEventListener('visibilitychange', () => {
-            if (focusModeActive) {
+            if (currentFocusMode === "strict") {
                 const alertOverlay = document.getElementById('focusAlertOverlay');
                 
                 if (document.hidden) {
-                    // User Left the Tab
                     alertOverlay.classList.add('active');
                     if ('speechSynthesis' in window) {
                         const speech = new SpeechSynthesisUtterance("Warning! You left your study tab! Return immediately!");
-                        speech.rate = 1.1; 
-                        speech.pitch = 1.2;
-                        window.speechSynthesis.speak(speech);
+                        speech.rate = 1.1; speech.pitch = 1.2; window.speechSynthesis.speak(speech);
                     }
                 } else {
-                    // User Came Back
                     alertOverlay.classList.remove('active');
                     if ('speechSynthesis' in window) {
-                        window.speechSynthesis.cancel(); // Stop shouting
-                        const speech = new SpeechSynthesisUtterance("Good. Stay focused.");
-                        window.speechSynthesis.speak(speech);
+                        window.speechSynthesis.cancel(); 
+                        window.speechSynthesis.speak(new SpeechSynthesisUtterance("Good. Stay focused."));
                     }
                 }
             }
